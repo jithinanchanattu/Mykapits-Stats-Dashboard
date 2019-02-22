@@ -2,15 +2,16 @@ import{ Bar} from 'vue-chartjs'
 
 export default {
     extends: Bar,
+    props:['getLabels', 'getDataSets'],
     mounted () {
     // Overwriting base render method with actual data.
     this.renderChart({
-      labels: ['2018', '2019'],
+      labels: this.getLabels,
       datasets: [
         {
           label: 'Yearly Unique Users',
           backgroundColor: '#f87979',
-          data: [230000, 6909]
+          data: this.getDataSets
         }
       ]
     })

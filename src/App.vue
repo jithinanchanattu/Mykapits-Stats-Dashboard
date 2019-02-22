@@ -87,6 +87,7 @@ export default class App extends Vue {
     this.pictureShow = !this.pictureShow;
     this.avatartMini = !this.avatartMini;
   }
+}
 </script>
 
 <style>
