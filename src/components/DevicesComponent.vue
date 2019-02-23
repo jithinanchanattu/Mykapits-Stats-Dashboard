@@ -4,56 +4,54 @@
     <v-layout class="filter-by-wrapper">
         <v-flex xs12 sm2>
             <p>Filter By:</p>
-            <v-btn-toggle v-model="filterModel">
-              <v-btn fab value="yearly" class="blue-grey">
-                Years
-              </v-btn>
-              <v-btn fab value="weekly" class="blue-grey">
-                Weeks
-              </v-btn>
-              <v-btn fab value="daily" class="blue-grey">
-                Days
-              </v-btn>
-            </v-btn-toggle>
+            <v-select
+              v-model="filterModel"
+              v-on:change="getChart"
+              :items="filter"
+              item-text="filter"
+              item-value="filter"
+              box
+              label="Select Year"
+            ></v-select>        
         </v-flex>
 
-        <v-flex xs12 sm4 class="wlangroup-wrapper">
+        <v-flex xs3 offset-sm1 class="wlangroup-wrapper">
             <v-select
               :items="tempwlan"
-              v-model="wlanModel"
               v-on:change="getDevices"
+              v-model = "wlanModel"
               item-text="name"
-              item-value="id"
+              item-value="_id"
               label="Select Wlan Group"
               hide-details
              ></v-select>
         </v-flex>
-
-        <v-flex xs12 sm4 class="wlangroup-wrapper">
+        <v-flex xs3 offset-sm1 class="wlangroup-wrapper">
             <v-select
               :items="devices"
-              v-model="devicesModel"
               v-on:change="getChart"
+              v-model = "devicesModel"
               item-text="name"
               item-value="mac"
-              attach
-              chips
-              multiple
               label="Select Devices"
-              hide-selected
-             >
-            </v-select>
-            {{devicesModel}}
-          </v-flex>
-    </v-layout>
+              chips
+              deletable-chips
+              multiple
+              return-object
+              hide-selected 
+            ></v-select>
+        </v-flex>
+      {{filterModel}}
+      </v-layout>
 
   <!--Conditional Subfilters-->
-    <v-layout v-if="filterModel=='yearly'" class="selection-wrapper" justify-end>
+    <v-layout v-if="filterModel=='Monthly'" class="selection-wrapper" justify-end>
           <v-flex xs12 sm2>
             <v-select
               v-model="yearModel"
               v-on:change="getChart"
               :items="year"
+              item-text="year"
               item-value="year"
               box
               label="Select Year"
@@ -61,9 +59,13 @@
           </v-flex>
     </v-layout>
     <v-layout v-else class="selection-wrapper" justify-end> 
-          <v-flex xs12 sm2>
+           <v-flex xs12 sm2>
             <v-select
+              v-model="yearModel"
+              v-on:change="getChart"
               :items="year"
+              item-text="year"
+              item-value="year"
               box
               label="Select Year"
             ></v-select>
@@ -71,41 +73,68 @@
         
           <v-flex xs12 sm2>
             <v-select
-              :items="year"
+              v-model="monthModel"
+              v-on:change="getChart"
+              :items="month"
+              item-text="mos"
+              item-value="value"
               box
               label="Select Month"
-            ></v-select>
+            ></v-select>       
           </v-flex>
     </v-layout>
 
   <!--Charts-->
-    <v-layout row wrap>
+   <v-layout v-if="filterModel=='Weekly'" row wrap>
       <v-flex xs12 sm12 md12>
-        <LineChart :data="dataChart"/>
+        <v-flex v-for="chart in dataChart" xs12 sm12 md12>
+          <WeeklyChart :data="chart.trends" :name="chart.name"/>
+        </v-flex>
       </v-flex>
     </v-layout>
 
+    <!--<v-layout v-if="dataChart.length == 0">
+      <v-flex xs12 sm12 md12>
+        <MonthlyChart />
+      </v-flex>
+    </v-layout>-->
+    <v-layout v-if="filterModel == 'Monthly'" row wrap>
+      <h1>Called</h1>
+       <v-flex v-for="chart in dataChart" xs12 sm12 md12> 
+        <MonthlyChart @click="remove()" :data="chart.trends" :name="chart.name"/>
+      </v-flex>
+    </v-layout>
   </v-container>
 </template>
 <script>
-import LineChart from './charts/YearlyLineChart.js';
+import MonthlyChart from './charts/YearlyLineChart.js';
+import WeeklyChart from './charts/WeeklyLineChart.js';
 import axios from 'axios';
 
   export default {
     components: {
-      LineChart,  
+      MonthlyChart,
+      WeeklyChart  
     },
     data() {
       return {
+        filter: ["Monthly", "Weekly"],
         devicesModel: [],
+        filterModel: null,
         wlanModel: null,
-        filterModel: 'yearly',
-        yearModel: 2018,
-        tempwlan:[],
-        devices: [],
-        year: ['2018', '2019'],
-        tempChart: [0,0,0,0,0,0,0,0,0,0,0,0],
-        dataChart: null
+        yearModel: '2019',
+        monthModel:{'mos':'January','value':1},
+        tempwlan:null,
+        devices: null,
+        month: [
+          {'mos':'January','value':1}, {'mos':'February','value':2}, {'mos':'March','value':3}, {'mos':'April','value':4}, {'mos':'May','value':5},
+          {'mos':'June','value':6}, {'mos':'July','value':7}, {'mos':'August','value':8}, {'mos':'Septemeber','value':9}, {'mos':'October','value':10},
+          {'mos':'November','value':11}, {'mos':'December','value':12}
+        ],
+        year: ['2019', '2018'],
+        monthChart: [0,0,0,0,0,0,0,0,0,0,0,0],
+        dataChart: [],
+        weekChart: []
       }
     },
   
@@ -113,34 +142,45 @@ import axios from 'axios';
       this.getWlangroup();
     },
     methods : {
-      getWlangroup() {
-        axios.get('http://206.189.91.127:62000/mykapits_stats/wlangroup')
-         .then((res) => res["data"].forEach(function(element){
-          this.tempwlan.push({name:element.name, id:element._id})
-        }.bind(this)))
-        .catch(err => console.log(err))
+      async getWlangroup() {
+        let res = await axios.get('http://206.189.91.127:62000/mykapits_stats/wlangroup')
+        this.tempwlan = res["data"]
       },
   
-      getDevices() {
-        console.log(this.wlanModel)
-        this.devices.length=0;
-        axios.get('http://206.189.91.127:62000/mykapits_stats/wlangroup/'+this.wlanModel)
-         .then((res) => res["data"].forEach(function(element){
-          this.devices.push({name:element.name, mac:element.mac})
-        }.bind(this)))
-        .catch(err => console.log(err))
+      async getDevices() {
+        this.devices = null;
+        let res = await axios.get('http://206.189.91.127:62000/mykapits_stats/wlangroup/'+this.wlanModel)
+        this.devices = res["data"]
       },
 
-       getChart() {
-        if(this.filterModel == "yearly") {
-          this.tempChart = [0,0,0,0,0,0,0,0,0,0,0,0]
-          axios.get('http://206.189.91.127:62000/mykapits_stats/'+this.devicesModel[0]+'/'+this.yearModel)
-          .then((res) => res["data"].forEach(function(element){
-              this.tempChart[element._id.month-1] = element.distinct
-              this.dataChart = this.tempChart
-          }.bind(this), console.log(this.dataChart))) 
-          .catch(err => console.log(err))
+      async getChart() {
+        console.log(this.filterModel) 
+       if(this.filterModel == "Monthly") {
+          let i = 0;
+          this.dataChart = [];
+          for(; i < this.devicesModel.length; i++) {
+            this.monthChart = [0,0,0,0,0,0,0,0,0,0,0,0];
+            let res =  await axios.get('http://206.189.91.127:62000/mykapits_stats/'+this.devicesModel[i]['mac']+'/'+this.yearModel)
+            res["data"].forEach(function(element){
+                this.monthChart[element._id.month-1] = element.distinct
+            }.bind(this))
+            this.dataChart.push({name:this.devicesModel[i]['name'], trends:this.monthChart})
+          }
+        } else {
+          let i = 0;
+          this.dataChart = [];
+          for(; i < this.devicesModel.length; i++) {
+            this.tempChart = [0,0,0,0,0,0,0,0,0,0,0,0];
+            let res =  await axios.get('http://206.189.91.127:62000/mykapits_stats/'+this.devicesModel[i]['mac']+'/'+this.yearModel+'/'+this.monthModel)
+            res["data"].forEach(function(element){
+                this.weekChart.push(element._id.week)
+            }.bind(this))
+            this.dataChart.push({name:this.devicesModel[i]['name'], trends:this.weekChart.sort()})
+          }
         }
+      }, 
+      async remove() {
+        console.log('called')
       }
     }
    }
@@ -148,7 +188,7 @@ import axios from 'axios';
 
 <style scoped>
   .filter-by-wrapper {
-    margin-bottom: 80px;
+    margin-bottom: 50px;
   }
 
   .wlangroup-wrapper {

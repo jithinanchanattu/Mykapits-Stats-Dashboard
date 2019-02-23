@@ -1,21 +1,13 @@
 <template>
   <v-app>
-    <v-navigation-drawer permanent class="light-blue darken-2" :mini-variant="miniVariant" :clipped="clipped" fixed app>
-      <div v-if="pictureShow">
-        <div class="user-border-image">
-          <v-avatar size="200">
-            <img src="@/assets/default-avatar-alien-monster.png">
-          </v-avatar>
-        </div>
-      </div>
-      <v-divider></v-divider>
+    <v-navigation-drawer permanent class="light-blue darken-2" mini-variant clipped fixed app>
       <v-list>
-        <v-list-tile avatar v-if="avatartMini">
+        <v-list-tile avatar>
           <v-list-tile-avatar>
             <img src="@/assets/default-avatar-alien-monster.png">
           </v-list-tile-avatar>
         </v-list-tile>
-
+        <v-divider></v-divider>
         <v-list-tile
           value="true"
           v-for="(item, i) in items"
@@ -32,11 +24,8 @@
       </v-list>
     </v-navigation-drawer>
 
-    <v-toolbar dark class="light-blue darken-1" app :clipped-left="clipped">
-      <v-btn icon @click="minimizeSideBar">
-        <v-icon v-html="miniVariant ? 'chevron_right' : 'chevron_left'"></v-icon>
-      </v-btn>
-      <v-toolbar-title class="white--text">Overview</v-toolbar-title>
+    <v-toolbar dark class="light-blue darken-1" app>
+      <v-toolbar-title class="white--text">Mykapits Free WiFi Statistics</v-toolbar-title>
       <v-spacer></v-spacer>
       <v-btn icon>
         <v-icon>refresh</v-icon>
@@ -57,11 +46,6 @@
 @Component
 export default class App extends Vue {
 
-  private clipped: boolean = false;
-  private drawer: boolean = true;
-  private fixed: boolean = false;
-  private pictureShow: boolean = true;
-  private avatartMini: boolean = false;
   private items: any[] = [
     {
       icon: 'dashboard',
@@ -79,14 +63,6 @@ export default class App extends Vue {
       link: '/contact',
     },
   ];
-
-  private miniVariant: boolean = false;
-
-  private minimizeSideBar() {
-    this.miniVariant = !this.miniVariant;
-    this.pictureShow = !this.pictureShow;
-    this.avatartMini = !this.avatartMini;
-  }
 }
 </script>
 
