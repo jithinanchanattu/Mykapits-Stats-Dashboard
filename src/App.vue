@@ -48,14 +48,9 @@ export default class App extends Vue {
 
   private items: any[] = [
     {
-      icon: 'dashboard',
-      title: 'Dashboard',
-      link: '/',
-    },
-    {
       icon: 'group_work',
       title: 'Devices',
-      link: '/devices',
+      link: '/',
     },
     {
       icon: 'settings',

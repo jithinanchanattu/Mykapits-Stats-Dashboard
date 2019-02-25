@@ -11,7 +11,7 @@
               item-text="filter"
               item-value="filter"
               box
-              label="Select Year"
+              label="Select Filter By"
             ></v-select>        
         </v-flex>
 
@@ -35,13 +35,11 @@
               item-value="mac"
               label="Select Devices"
               chips
-              deletable-chips
               multiple
               return-object
               hide-selected 
             ></v-select>
         </v-flex>
-      {{filterModel}}
       </v-layout>
 
   <!--Conditional Subfilters-->
@@ -85,23 +83,36 @@
     </v-layout>
 
   <!--Charts-->
-   <v-layout v-if="filterModel=='Weekly'" row wrap>
+   <v-layout v-if="filterModel == 'Monthly' && dataChart.length > 0" row wrap>
+      <v-flex class="flex-chart" v-for="chart in dataChart" xs12 sm12 md12>
+        <MonthlyChart :styles="{height: '450px', width: '1230px' }" :data="chart.trends" :name="chart.name"/>
+        <v-btn @click="remove(chart.name)" fab dark small color="red">
+          X
+        </v-btn>
+      </v-flex>
+      <!--<MonthlyChart  :data="chart.trends" :name="chart.name"/>
+        <span class="remove-button">x</span>-->
+   </v-layout>
+   <v-layout v-else-if="filterModel=='Weekly' && weekDataChart.length > 0" row wrap>
       <v-flex xs12 sm12 md12>
-        <v-flex v-for="chart in dataChart" xs12 sm12 md12>
-          <WeeklyChart :data="chart.trends" :name="chart.name"/>
+        <v-flex class="flex-chart" v-for="chart in weekDataChart" xs12 sm12 md12>
+          <WeeklyChart :styles="{height: '450px', width: '1230px' }" :data="chart.trends" :name="chart.name"/>
+           <v-btn @click="remove(chart.name)" fab dark small color="red">
+            X
+           </v-btn>
         </v-flex>
       </v-flex>
     </v-layout>
 
-    <!--<v-layout v-if="dataChart.length == 0">
+    <v-layout v-else-if="filterModel=='Weekly' && weekDataChart.length == 0">
+      <v-flex xs12 sm12 md12>
+        <WeeklyChart />
+      </v-flex>
+    </v-layout>
+
+    <v-layout v-else-if="filterModel=='Monthly' && dataChart.length == 0">
       <v-flex xs12 sm12 md12>
         <MonthlyChart />
-      </v-flex>
-    </v-layout>-->
-    <v-layout v-if="filterModel == 'Monthly'" row wrap>
-      <h1>Called</h1>
-       <v-flex v-for="chart in dataChart" xs12 sm12 md12> 
-        <MonthlyChart @click="remove()" :data="chart.trends" :name="chart.name"/>
       </v-flex>
     </v-layout>
   </v-container>
@@ -118,12 +129,12 @@ import axios from 'axios';
     },
     data() {
       return {
-        filter: ["Monthly", "Weekly"],
+        filter: ['Monthly', 'Weekly'],
         devicesModel: [],
-        filterModel: null,
+        filterModel: 'Monthly',
         wlanModel: null,
         yearModel: '2019',
-        monthModel:{'mos':'January','value':1},
+        monthModel:1,
         tempwlan:null,
         devices: null,
         month: [
@@ -134,7 +145,8 @@ import axios from 'axios';
         year: ['2019', '2018'],
         monthChart: [0,0,0,0,0,0,0,0,0,0,0,0],
         dataChart: [],
-        weekChart: []
+        weekChart: [],
+        weekDataChart: []
       }
     },
   
@@ -159,6 +171,7 @@ import axios from 'axios';
           let i = 0;
           this.dataChart = [];
           for(; i < this.devicesModel.length; i++) {
+            this.weekChart =[]
             this.monthChart = [0,0,0,0,0,0,0,0,0,0,0,0];
             let res =  await axios.get('http://206.189.91.127:62000/mykapits_stats/'+this.devicesModel[i]['mac']+'/'+this.yearModel)
             res["data"].forEach(function(element){
@@ -168,19 +181,29 @@ import axios from 'axios';
           }
         } else {
           let i = 0;
-          this.dataChart = [];
+          this.weekDataChart = [];
           for(; i < this.devicesModel.length; i++) {
-            this.tempChart = [0,0,0,0,0,0,0,0,0,0,0,0];
+            this.monthChart = [0,0,0,0,0,0,0,0,0,0,0,0];
+            this.weekChart = [];
             let res =  await axios.get('http://206.189.91.127:62000/mykapits_stats/'+this.devicesModel[i]['mac']+'/'+this.yearModel+'/'+this.monthModel)
-            res["data"].forEach(function(element){
-                this.weekChart.push(element._id.week)
-            }.bind(this))
-            this.dataChart.push({name:this.devicesModel[i]['name'], trends:this.weekChart.sort()})
+            res["data"].sort((a, b) => (a._id.week > b._id.week)?1 : -1)
+            let minVal = (Math.min(...res['data'].map(s=>s._id.week)));
+            let maxVal = (Math.max(...res['data'].map(s=>s._id.week)));
+            for(minVal; minVal <= maxVal; minVal++){
+              let result = res['data'].find(data => data._id.week == minVal)
+              result !== undefined ? this.weekChart.push(result.distinct):this.weekChart.push(0)
+            }
+            this.weekDataChart.push({name:this.devicesModel[i]['name'], trends:this.weekChart})
           }
         }
       }, 
-      async remove() {
-        console.log('called')
+      async remove(name) {
+        let dataChartIndex = this.dataChart.map(function(item) { return item.name; }).indexOf(name);
+        let weekDataChartIndex = this.weekDataChart.map(function(item) { return item.name; }).indexOf(name);
+        let devicesIndex = this.devicesModel.map(function(item) {return item.name;}).indexOf(name)
+        this.devicesModel.splice(devicesIndex,1);        
+        this.dataChart.splice(dataChartIndex, 1);
+        this.weekDataChart.splice(weekDataChartIndex, 1);
       }
     }
    }
@@ -197,5 +220,12 @@ import axios from 'axios';
 
   .selection-wrapper {
     padding-right: 30px;
+  }
+  .remove-button:hover {
+    cursor:pointer;
+    color: blue;
+  }
+  .flex-chart {
+    display:inline-flex;
   }
 </style>
