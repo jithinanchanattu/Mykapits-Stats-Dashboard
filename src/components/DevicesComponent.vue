@@ -132,7 +132,7 @@ import axios from 'axios';
         filter: ['Monthly', 'Weekly'],
         devicesModel: [],
         filterModel: 'Monthly',
-        wlanModel: null,
+        wlanModel:"5a9eb593e4b0018a44c1e588",
         yearModel: '2019',
         monthModel:1,
         tempwlan:null,
@@ -157,6 +157,7 @@ import axios from 'axios';
       async getWlangroup() {
         let res = await axios.get('http://206.189.91.127:62000/mykapits_stats/wlangroup')
         this.tempwlan = res["data"]
+        this.getDevices()
       },
   
       async getDevices() {
@@ -166,7 +167,6 @@ import axios from 'axios';
       },
 
       async getChart() {
-        console.log(this.filterModel) 
        if(this.filterModel == "Monthly") {
           let i = 0;
           this.dataChart = [];

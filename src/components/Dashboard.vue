@@ -1,69 +1,86 @@
 <template>
-    <v-container fluid grid-list-md>
-      <v-layout row wrap>
-        <v-flex d-flex xs12 sm4 md6>
-          <v-card class="distinct-wrapper" color="blue-grey">
-            <v-card-title primary class="white--text title">{{ totalDistinct }}</v-card-title>
-            <v-card-text class="white--text">AP Devices</v-card-text>
-          </v-card>
-        </v-flex>
+  <v-app>
+    <v-navigation-drawer permanent class="light-blue darken-2" mini-variant clipped fixed app>
+      <v-list>
+        <v-list-tile avatar>
+          <v-list-tile-avatar>
+            <img src="@/assets/default-avatar-alien-monster.png">
+          </v-list-tile-avatar>
+        </v-list-tile>
+        <v-divider></v-divider>
+        <v-list-tile
+          value="true"
+          v-for="(item, i) in items"
+          :key="i"
+          :to="item.link"
+        >
+          <v-list-tile-action>
+            <v-icon v-html="item.icon"></v-icon>
+          </v-list-tile-action>
+          <v-list-tile-content>
+            <v-list-tile-title v-text="item.title" class="white--text"></v-list-tile-title>
+          </v-list-tile-content>
+        </v-list-tile>
+      </v-list>
+    </v-navigation-drawer>
 
-        <v-flex d-flex xs12 sm4 md6>
-          <v-card class="distinct-wrapper" color="blue-grey">
-            <v-card-title primary class="white--text title">{{ totalDistinct }}</v-card-title>
-            <v-card-text class="white--text">WLAN Groups</v-card-text>
-          </v-card>
-        </v-flex>
-        <YearlyBarChart :getLabels="labels" :getDataSets="data" class="chart-wrapper" v-if="labels.length>0 "/>
-      </v-layout>
-          
-    </v-container>
+    <v-toolbar dark class="light-blue darken-1" app>
+      <v-toolbar-title class="white--text">Mykapits Free WiFi Statistics</v-toolbar-title>
+      <v-spacer></v-spacer>
+      <v-btn v-if="isLoggedIn" @click="logout()" icon>
+        Logout
+      </v-btn>
+      <v-btn icon>
+        <v-icon>more_vert</v-icon>
+      </v-btn>
+    </v-toolbar>
+    <v-content>
+      <router-view/>
+    </v-content>
+  </v-app>
 </template>
-<script>
-import YearlyBarChart from './charts/YearlyBarChart.js';
-import axios from 'axios';
+
+<script lang="ts">
 export default {
-      components: {
-        YearlyBarChart,
+  name: 'App',
+  components: {
+    
+  },
+  data() {
+    return {
+      items: [{
+        icon: 'group_work',
+        title: 'Devices',
+        link: '/',
       },
-      data() {
-        return {
-          labels: [],
-          totalDistinct: null,
-          error: null,
-          data: []
-        };
-      },
-      created() {
-        this.fillData();
-     },
-     methods: {
-        fillData() {
-          axios.get('http://206.189.91.127:62000/mykapits_stats')
-          .then((res) => 
-            res["data"].forEach(function(element) {
-              this.labels.push(element._id.year) 
-              this.data.push(element.distinct) 
-          }.bind(this)))
-          .catch(err => console.log(err));  
-        }
-      }   
-    };
+      { 
+        icon: 'settings',
+        title: 'Settings',
+        link: '/contact',
+      }]
+    }
+  },
+  computed: {
+    isLoggedIn: function() {
+      return this.$store.getters.isLoggedIn;
+    }
+  },
+  methods: {
+    logout: function() {
+      this.$store.dispatch("logout").then(() => {
+        this.$router.push("/login");
+      });
+    }
+  }
+}
 </script>
 
-<style scoped>
-  .distinct-wrapper {
-    padding: 35px;
-  }
-  .distinct-wrapper > .title {
-    font-size: 70px !important;
+<style>
+  .v-list__tile__title{
+    font-size: large;
   }
   
-  .v-card__text {
-    font-size: 20px;
-  }
-
-  .chart-wrapper {
-    margin-top: 50px;
+  .user-border-image {
+    padding: 40px;
   }
 </style>
